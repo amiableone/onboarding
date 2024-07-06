@@ -1,6 +1,6 @@
 import asyncio
 from openai.types.beta.threads import Run
-from typing import Dict
+from typing import Dict, Set
 
 from utils import (
     get_client,
@@ -9,8 +9,6 @@ from utils import (
     to_messages,
     AsyncOpenAI,
     Assistant,
-    Thread,
-    VectorStoreFileBatch,
 )
 
 
@@ -20,7 +18,6 @@ class QueryDispatcher:
     # attributes for interacting with the OpenAI API
     client: AsyncOpenAI
     assistant: Assistant
-    batch: VectorStoreFileBatch
     # map chat ids to thread ids.
     threads: Dict
 
@@ -29,9 +26,15 @@ class QueryDispatcher:
     # Tuple[str, str] where the first value is a chat_id.
     queries: asyncio.Queue
     responses: asyncio.Queue
+    chats: Set[str]
+    handlers: Set[asyncio.Task]
 
     def __init__(self):
         self.client = get_client()
+        self.queries = asyncio.Queue()
+        self.responses = asyncio.Queue()
+        self.chats = set()
+        self.handlers = set()
 
     @classmethod
     async def setup(cls):
@@ -40,11 +43,11 @@ class QueryDispatcher:
         # store information for the assistant in the VectorStore object
         # of the OpenAI API.
         batch = await store_files(qd.client)
-        qd.batch = batch
         vectore_store_id = batch.vector_store_id
 
         # create an assistant.
         self.assistant = await create_assistant(qd.client, vectore_store_id)
+        return qd
 
     async def thread_message(self, chat_id, text, role="user"):
         try:
