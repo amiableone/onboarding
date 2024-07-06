@@ -151,7 +151,7 @@ class BotCommandManagerMixin:
     """
     This mixin adds command managing features to BotBase subclass.
     """
-    commands: Dict[str, BotCommandBase]
+    commands: Dict[str, BotCommandBase] = {}
     _get_commands = "getMyCommands"
     _set_commands = "setMyCommands"
     has_unset_commands = False
@@ -339,7 +339,4 @@ class BotUpdateHandlerMixin:
 
 
 class Bot(BotBase, BotCommandManagerMixin, BotUpdateHandlerMixin):
-    def __init__(self, token):
-        super().__init__(token)
-        self.commands = {}
-        self.allowed_updates = ["message", "edited_message"]
+    pass
