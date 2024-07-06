@@ -54,6 +54,7 @@ class QueryDispatcher:
         await self.client.beta.threads.messages.create(
             thread_id, content=text, role=role
         )
+        return thread_id
 
     async def create_thread(self, chat_id, text, role="user"):
         thread = await self.client.beta.threads.create(
