@@ -5,7 +5,7 @@ from utils import (
     get_client,
     store_files,
     create_assistant,
-    create_thread,
+    to_messages,
     AsyncOpenAI,
     Assistant,
     Thread,
@@ -45,11 +45,19 @@ class QueryDispatcher:
         # create an assistant.
         self.assistant = await create_assistant(qd.client, vectore_store_id)
 
-    async def get_thread(self, chat_id) -> Thread:
+    async def thread_message(self, chat_id, text, role="user"):
         try:
             thread_id = self.threads[chat_id]
-            thread = await self.client.beta.threads.retrieve(thread_id)
         except KeyError:
-            thread = await create_thread()
-            self.threads[chat_id] = thread_id
-        return thread
+            thread_id = await self.create_thread(chat_id, text, role)
+        await self.client.beta.threads.messages.create(
+            thread_id, content=text, role=role
+        )
+
+    async def create_thread(self, chat_id, text, role="user"):
+        thread = await self.client.beta.threads.create(
+            messages=to_messages(text, role)
+        )
+        thread_id = thread.id
+        self.threads[chat_id] = thread_id
+        return thread_id
