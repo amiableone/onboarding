@@ -38,7 +38,7 @@ async def store_files(
         store_name="Info",
 ) -> VectorStoreFileBatch:
     """Store files in the VectorStore object (see OpenAI API docs)."""
-    vstore = client.beta.vector_stores.create(name=store_name)
+    vstore = await client.beta.vector_stores.create(name=store_name)
     tasks = []
     for path in os.listdir(FILES):
         task = asyncio.create_task(get_file(client, path))
