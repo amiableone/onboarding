@@ -2,7 +2,7 @@ import asyncio
 from openai.types.beta.threads import Run
 from typing import Dict, Set
 
-from utils import (
+from .utils import (
     get_client,
     store_files,
     create_assistant,
