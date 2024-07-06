@@ -31,6 +31,7 @@ class QueryDispatcher:
 
     def __init__(self):
         self.client = get_client()
+        self.threads = {}
         self.queries = asyncio.Queue()
         self.responses = asyncio.Queue()
         self.chats = set()
