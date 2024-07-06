@@ -28,7 +28,7 @@ def get_client() -> AsyncOpenAI:
 async def get_file(client: AsyncOpenAI,  filename) -> FileObject:
     """Create a file object (see OpenAI API docs)."""
     filename = FILES / filename
-    async with open(filename, "rb") as f:
+    with open(filename, "rb") as f:
         file = await client.files.create(file=f, purpose="assistants")
     return file
 
