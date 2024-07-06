@@ -93,10 +93,11 @@ class QueryDispatcher:
 
     async def handle_user(self, chat_id, query):
         """Handle a single user interaction with the OpenAI API."""
-        thread_id = await self.thread_message(chat_id, query)
-        run = await self.run_thread(thread_id)
-        response = await self.get_response()
-        self.responses.put_nowait((chat_id, response))
+        while True:
+            thread_id = await self.thread_message(chat_id, query)
+            run = await self.run_thread(thread_id)
+            response = await self.get_response()
+            self.responses.put_nowait((chat_id, response))
 
     async def run(self):
         """Run QueryDispatcher."""
