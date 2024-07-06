@@ -5,10 +5,14 @@ from dotenv import load_dotenv
 from httpx import AsyncClient
 from pathlib import Path
 from openai import AsyncOpenAI
+from openai.types import FileObject
+from openai.types.beta import Assistant
+from openai.types.beta.vector_stores import VectorStoreFileBatch
 
 load_dotenv()
 
 FILES = Path(__file__).resolve().parent
+FILE_SEARCH_TOOL = {"type": "file_search"}
 
 
 def get_client() -> AsyncOpenAI:
@@ -21,7 +25,7 @@ def get_client() -> AsyncOpenAI:
     return client
 
 
-async async def get_file(client: AsyncOpenAI,  filename):
+async def get_file(client: AsyncOpenAI,  filename) -> FileObject:
     """Create a file object (see OpenAI API docs)."""
     filename = FILES / filename
     async with open(filename, "rb") as f:
@@ -33,7 +37,7 @@ async def store_files(
         client: AsyncOpenAI,
         *filenames,
         store_name="Info",
-):
+) -> VectorStoreFileBatch:
     """Store files in the VectorStore object (see OpenAI API docs)."""
     vstore = client.beta.vector_stores.create(name=store_name)
     file_paths = []
@@ -47,3 +51,41 @@ async def store_files(
         vector_store_id=vstore.id, files=file_streams
     )
     return file_batch
+
+
+async def create_assistant(
+        client: AsyncOpenAI,
+        vector_store_id: str,
+        instructions: str | None = None,
+        model="gpt-4o",
+) -> Assistant:
+    # only the file_search tool is supported for now.
+    tools = [FILE_SEARCH_TOOL],
+    tool_resources = {
+        "file_search": {
+            "vector_store_ids": [vector_store_id],
+        },
+    }
+    instructions = (
+        instructions
+        or "You're an HR assistant that has access to files with information"
+           "about the company, its culture, and the hackathon test the job"
+           "candidates must pass to get onboard. You share views strongly "
+           "correlated with the company culture - striving for productivity"
+           "and intolerating incompetence. You're manner of speech resembles"
+           "that of Ben Horowitz, a founder of a16z (you can find some info"
+           "on the topic in the files)."
+    )
+    assistant = await client.beta.assistants.create(
+        instructions = instructions,
+        name="Startup HR Assistant",
+        tools=tools,
+        tool_resources=tool_resources,
+        temperature=0.3,
+        model=model,
+    )
+    return assistant
+
+
+async def create_thread():
+    pass
