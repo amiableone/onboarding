@@ -11,7 +11,7 @@ from openai.types.beta.vector_stores import VectorStoreFileBatch
 
 load_dotenv()
 
-FILES = Path(__file__).resolve().parent
+FILES = Path(__file__).resolve().parent.parent / "files"
 FILE_SEARCH_TOOL = {"type": "file_search"}
 
 
@@ -40,17 +40,18 @@ async def store_files(
 ) -> VectorStoreFileBatch:
     """Store files in the VectorStore object (see OpenAI API docs)."""
     vstore = client.beta.vector_stores.create(name=store_name)
-    file_paths = []
-    for filename in filenames:
-        file_paths.append(FILES / filename)
-    file_streams = []
-    for file_path in file_paths:
-        with open(file_path, "rb") as f:
-            file_streams.append(f)
-    file_batch = await client.beta.vector_stores.file_batches.upload_and_poll(
-        vector_store_id=vstore.id, files=file_streams
+    paths = [FILES / filename for filename in os.listdir(FILES)]
+    tasks = []
+    for name in os.listdir(FILES):
+        task = asyncio.create_task(get_file(client, path))
+        tasks.append(task)
+    files = await asyncio.gather(*tasks)
+    file_ids = [file.id for file in files]
+    batch = await client.beta.vector_stores.file_batches.create(
+        vector_store_id=vstore.id,
+        file_ids=file_ids,
     )
-    return file_batch
+    return batch
 
 
 async def create_assistant(
