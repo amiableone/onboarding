@@ -1,4 +1,5 @@
 import asyncio
+from openai.types.beta.threads import Run
 from typing import Dict
 
 from utils import (
@@ -61,3 +62,11 @@ class QueryDispatcher:
         thread_id = thread.id
         self.threads[chat_id] = thread_id
         return thread_id
+
+    async def run_thread(self, thread_id) -> Run:
+        # create a run and poll until it reaches a terminal state.
+        run = await self.client.beta.threads.runs.create_and_poll(
+            thread_id=thread_id,
+            assistant_id=self.assistant.id,
+        )
+        return run
