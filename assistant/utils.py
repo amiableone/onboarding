@@ -87,5 +87,6 @@ async def create_assistant(
     return assistant
 
 
-async def create_thread() -> Thread:
-    pass
+def to_messages(text, role):
+    # images are not supported at this point.
+    return [{"role": role, "content": text}]
