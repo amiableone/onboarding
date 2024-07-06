@@ -46,7 +46,7 @@ class QueryDispatcher:
         vectore_store_id = batch.vector_store_id
 
         # create an assistant.
-        self.assistant = await create_assistant(qd.client, vectore_store_id)
+        qd.assistant = await create_assistant(qd.client, vectore_store_id)
         return qd
 
     async def thread_message(self, chat_id, text, role="user"):
