@@ -321,7 +321,8 @@ class BotUpdateHandlerMixin:
                 cmd_pending = chat_id, command, params
                 self.cmds_pending.put_nowait(cmd_pending)
             else:
-                self.queries.put_nowait(message)
+                query = chat_id, message
+                self.queries.put_nowait(query)
         except (
             TypeError,
             KeyError,
