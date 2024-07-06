@@ -89,3 +89,24 @@ class QueryDispatcher:
         else:
             response = f"Your query {run.status}."
         return response
+
+    async def handle_user(self, chat_id, query):
+        """Handle a single user interaction with the OpenAI API."""
+        thread_id = await self.thread_message(chat_id, query)
+        run = await self.run_thread(thread_id)
+        response = await self.get_response()
+        self.responses.put_nowait((chat_id, response))
+
+    async def run(self):
+        """Run QueryDispatcher."""
+        while True:
+            chat_id, query = await self.queries.get()
+            if chat_id not in self.chats:
+                handler = asyncio.create_task(self.handle_user(chat_id, query))
+                self.handlers.add(handler)
+                handler.add_done_callback(self.handlers.discard)
+        await asyncio.gather(*self.handlers)
+
+    def stop(self):
+        for task in self.handlers:
+            task.cancel()
