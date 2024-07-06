@@ -59,7 +59,7 @@ async def create_assistant(
         model="gpt-4o",
 ) -> Assistant:
     # only the file_search tool is supported for now.
-    tools = [FILE_SEARCH_TOOL],
+    tools = FILE_SEARCH_TOOL,
     tool_resources = {
         "file_search": {
             "vector_store_ids": [vector_store_id],
@@ -72,7 +72,7 @@ async def create_assistant(
            "candidates must pass to get onboard. You share views strongly "
            "correlated with the company culture - striving for productivity"
            "and intolerating incompetence. You're manner of speech resembles"
-           "that of Ben Horowitz, a founder of a16z (you can find some info"
+           "that of Ben Horowitz, a founder of a16z (you can find some info "
            "on the topic in the files)."
     )
     assistant = await client.beta.assistants.create(
