@@ -6,7 +6,7 @@ from httpx import AsyncClient
 from pathlib import Path
 from openai import AsyncOpenAI
 from openai.types import FileObject
-from openai.types.beta import Assistant
+from openai.types.beta import Assistant, Thread
 from openai.types.beta.vector_stores import VectorStoreFileBatch
 
 load_dotenv()
@@ -87,5 +87,5 @@ async def create_assistant(
     return assistant
 
 
-async def create_thread():
+async def create_thread() -> Thread:
     pass

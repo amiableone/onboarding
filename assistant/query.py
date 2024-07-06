@@ -5,6 +5,7 @@ from utils import (
     get_client,
     store_files,
     create_assistant,
+    create_thread,
     AsyncOpenAI,
     Assistant,
     Thread,
@@ -19,8 +20,8 @@ class QueryDispatcher:
     client: AsyncOpenAI
     assistant: Assistant
     batch: VectorStoreFileBatch
-    # map chat ids to Thread objects.
-    threads: Dict[str, Thread]
+    # map chat ids to thread ids.
+    threads: Dict
 
     # provide interface for the telegram bot to interact with
     # this class. `messages` and `responses` are queues of
@@ -43,3 +44,12 @@ class QueryDispatcher:
 
         # create an assistant.
         self.assistant = await create_assistant(qd.client, vectore_store_id)
+
+    async def get_thread(self, chat_id) -> Thread:
+        try:
+            thread_id = self.threads[chat_id]
+            thread = await self.client.beta.threads.retrieve(thread_id)
+        except KeyError:
+            thread = await create_thread()
+            self.threads[chat_id] = thread_id
+        return thread
