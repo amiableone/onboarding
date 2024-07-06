@@ -27,3 +27,23 @@ async async def get_file(client: AsyncOpenAI,  filename):
     async with open(filename, "rb") as f:
         file = await client.files.create(file=f, purpose="assistants")
     return file
+
+
+async def store_files(
+        client: AsyncOpenAI,
+        *filenames,
+        store_name="Info",
+):
+    """Store files in the VectorStore object (see OpenAI API docs)."""
+    vstore = client.beta.vector_stores.create(name=store_name)
+    file_paths = []
+    for filename in filenames:
+        file_paths.append(FILES / filename)
+    file_streams = []
+    for file_path in file_paths:
+        with open(file_path, "rb") as f:
+            file_streams.append(f)
+    file_batch = await client.beta.vector_stores.file_batches.upload_and_poll(
+        vector_store_id=vstore.id, files=file_streams
+    )
+    return file_batch
