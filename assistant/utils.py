@@ -35,7 +35,6 @@ async def get_file(client: AsyncOpenAI,  filename) -> FileObject:
 
 async def store_files(
         client: AsyncOpenAI,
-        *filenames,
         store_name="Info",
 ) -> VectorStoreFileBatch:
     """Store files in the VectorStore object (see OpenAI API docs)."""
