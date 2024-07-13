@@ -216,47 +216,38 @@ class BotUpdateHandlerMixin:
     This mixin adds update polling feature to BotBase subclass.
     """
     _get_updates = "getUpdates"
-    allowed_updates = ["message", "edited_message"]
+    allowed_updates = ("message", "edited_message")
     limit = 100
     offset = 1
-    timeout = 100
+    timeout = 100   # max allowed
+    _reset_period: timedelta
+    last_date: Optional[datetime]
+    last_id: int
+    updates: asyncio.Queue
+    queries: asyncio.Queue
+    cmds_pending: asyncio.Queue
 
-    # if no update retrieved for 7 days, id of the next update is set randomly
-    _reset_period = timedelta(days=7)
-    last_update_date = datetime.today() - timedelta(days=7)
-    last_update_id = 0
-    updates: asyncio.Queue = asyncio.Queue()
-    queries: asyncio.Queue = asyncio.Queue()
-    cmds_pending: asyncio.Queue = asyncio.Queue()
+    def conf_updates(self):
+        # if no update retrieved for 7 days, id of the next update is set randomly
+        self._reset_period = timedelta(days=7)
+        self.last_date = None
+        self.last_id = 0
+        self.updates = asyncio.Queue()
+        self.queries = asyncio.Queue()
+        self.cmds_pending = asyncio.Queue()
 
-    def __init__(self):
-        raise NotImplementedError(
-            "Can't instantiate this class on its own. "
-            "Use as mixin for a BotBase subclass."
-        )
-
-    @classmethod
-    def recalculate_lud(cls, date):
+    def new_last_date(self, date):
         # `date` is param of Update object from Telegram Bot API.
-        cls.last_update_date = datetime.fromtimestamp(date)
+        self.last_date = datetime.fromtimestamp(date)
 
-    @classmethod
-    def recalculate_luid(cls, luid):
-        if cls.reset_period_expired():
-            cls.last_update_id = luid
+    def new_last_id(self, luid):
+        if self.last_date and self.last_date > datetime.today() - timedelta(days=7):
+            self.last_id = max(self.last_id, luid)
         else:
-            cls.last_update_id = max(cls.last_update_id, luid)
+            self.last_id = luid
 
-    @classmethod
-    def recalculate_offset(cls):
-        cls.offset = cls.last_update_id + 1
-
-    @classmethod
-    def reset_period_expired(cls):
-        try:
-            return datetime.today() - cls.last_update_date > cls._reset_period
-        except TypeError:
-            return False
+    def new_offset(self):
+        self.offset = self.last_id + 1
 
     async def get_updates(self):
         data = self._get_updates_params()
@@ -269,6 +260,7 @@ class BotUpdateHandlerMixin:
         first = done.pop()
         if getter is not first:
             getter.cancel()
+            await asyncio.sleep(0)
             return
         res = getter.result()
         if res["ok"]:
@@ -287,20 +279,20 @@ class BotUpdateHandlerMixin:
         """
         Process updates and recalculate offset param.
         """
-        date = self.last_update_date
+        date = self.last_date
         # while stmt references attr of BotBase.
         while not self.updates.empty():
             update = self.updates.get_nowait()
             msg_obj = update.get("message") or update.get("edited_message")
+            # Update class attributes
+            date = msg_obj.get("date") or msg_obj.get("edit_date") or date
+            self.new_last_date(date)
+            self.new_last_id(update["update_id"])
+            self.new_offset()
             try:
                 self.process_message(msg_obj)
             except TypeError:
                 continue
-            # Update class attributes
-            date = msg_obj.get("date") or msg_obj.get("edit_date") or date
-            self.__class__.recalculate_lud(date)
-            self.__class__.recalculate_luid(update["update_id"])
-            self.__class__.recalculate_offset()
         logger.info("New update offset value is %s", self.offset)
 
     def process_message(self, msg_obj):
@@ -312,21 +304,9 @@ class BotUpdateHandlerMixin:
             chat_id = msg_obj["chat"]["id"]
             message = msg_obj["text"]
             logger.info("Received message '%s' from chat %s", message, chat_id)
-            if message.startswith("/"):
-                # only commands in the beginning of the message are supported.
-                for entity in msg_obj["entities"]:
-                    if entity["type"] == "bot_command":
-                        cmd_end = entity["length"]
-                command, params = message[1:cmd_end], message[cmd_end:]
-                cmd_pending = chat_id, command, params
-                self.cmds_pending.put_nowait(cmd_pending)
-            else:
-                query = chat_id, message
-                self.queries.put_nowait(query)
-        except (
-            TypeError,
-            KeyError,
-        ):
+            query = chat_id, message
+            self.queries.put_nowait(query)
+        except (TypeError, KeyError):
             raise TypeError("Neither a message nor command")
 
     async def run_polling(self):
