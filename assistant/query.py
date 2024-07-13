@@ -82,6 +82,7 @@ class QueryDispatcher:
 
     async def get_response(self, run: Run, last_id: str | NotGiven):
         # if run is completed, retrieve the message it generated.
+        response = "Что-то сломалось. Может, попробуем снова?"
         if run.status == "completed":
             paginator =  self.client.beta.threads.messages.list(
                 thread_id=run.thread_id,
@@ -96,9 +97,7 @@ class QueryDispatcher:
                     response = await handle_annotations(response, annotations)
                 except AttributeError as err:
                     # message content type is probably not 'text'.
-                    response = "Сейчас я понимаю только текстовые сообщения."
-        else:
-            response = "Что-то сломалось. Может, попробуем снова?"
+                    pass
         return response, last_id
 
     async def handle_user(self, chat_id, query):
