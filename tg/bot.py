@@ -320,4 +320,6 @@ class BotUpdateHandlerMixin:
 
 
 class Bot(BotBase, BotCommandManagerMixin, BotUpdateHandlerMixin):
-    pass
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.conf_updates()
