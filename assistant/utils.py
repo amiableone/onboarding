@@ -1,5 +1,6 @@
 import asyncio
 import os
+import sys
 
 from dotenv import load_dotenv
 from httpx import AsyncClient
@@ -97,45 +98,19 @@ def to_messages(text, role):
 async def get_filename(
         client: AsyncOpenAI,
         file_id: str,
-        vstore_id: str,
 ) -> FileObject:
-    f = await client.beta.vector_stores.files.retrieve(
-        vector_store_id=vstore_id,
-        file_id=file_id,
-    )
+    f = await client.files.retrieve(file_id)
     return f.filename
 
 
 async def handle_annotations(
-        client: AsyncOpenAI,
         response: str,
         annotations: list,
-        vstore_id: str,
 ):
     """
-    Replace file_citation annotations with a reference to a corresponding
-    file name.
+    Replace file references with empty strings.
     """
-    lock = asyncio.Lock()
-
-    def gen_file_getter(annotations):
-        for annotation in annotations:
-            placeholder = annotation.text
-            print("==============ANNOTATION TEXT", placeholder)
-            try:
-                file_id = annotation.file_citation.file_id
-                file_ids.append(file_id)
-                print("===================FILE ID", file_id)
-                task = asyncio.create_task(get_filename(client, file_id, vstore_id))
-                task._placeholder = placeholder
-            except AttributeError:
-                continue
-
-    file_getter_generator = gen_file_getter(annotations)
-    for coro in file_getter_generator:
-        task = await coro
-        filename = task.result
-        placeholder = task._placeholder
-        async with lock:
-            response = response.replace(placeholder, f" (from {filename})")
+    for annotation in annotations:
+        placeholder = annotation.text
+        response = response.replace(placeholder, "")
     return response
