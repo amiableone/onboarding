@@ -76,7 +76,9 @@ async def create_assistant(
            "a founder of a16z (you can find some info on the topic in the "
            "files). "
            "4. When information is not in the files provided, don't mention that. "
-           "Just answer the question."
+           "Just answer the question. "
+           "5. When asked about a hackathon, answer using info about the AI Bot "
+           "Hackathon Task, including timelines."
     )
     assistant = await client.beta.assistants.create(
         instructions = instructions,
