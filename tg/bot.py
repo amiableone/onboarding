@@ -319,7 +319,7 @@ class BotUpdateHandlerMixin:
             logger.exception("Exception in run_polling: %s", exc)
 
 
-class Bot(BotBase, BotCommandManagerMixin, BotUpdateHandlerMixin):
+class Bot(BotBase, BotUpdateHandlerMixin):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.conf_updates()
