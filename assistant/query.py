@@ -39,6 +39,7 @@ class QueryDispatcher:
         self.responses = asyncio.Queue()
         self.chats = set()
         self.handlers = set()
+        self.running = False
 
     @classmethod
     async def setup(cls):
@@ -95,9 +96,9 @@ class QueryDispatcher:
                     response = await handle_annotations(response, annotations)
                 except AttributeError as err:
                     # message content type is probably not 'text'.
-                    response = "Currently, I only understand text messages."
+                    response = "Сейчас я понимаю только текстовые сообщения."
         else:
-            response = f"Your query {run.status}."
+            response = "Что-то сломалось. Может, попробуем снова?"
         return response, last_id
 
     async def handle_user(self, chat_id, query):
@@ -111,8 +112,13 @@ class QueryDispatcher:
 
     async def run(self):
         """Run QueryDispatcher."""
-        while True:
-            chat_id, query = await self.queries.get()
+        self.running = True
+        while self.running:
+            try:
+                async with asyncio.timeout(5):
+                    chat_id, query = await self.queries.get()
+            except TimeoutError:
+                continue
             if chat_id not in self.chats:
                 handler = asyncio.create_task(self.handle_user(chat_id, query))
                 self.handlers.add(handler)
@@ -122,3 +128,4 @@ class QueryDispatcher:
     def stop(self):
         for task in self.handlers:
             task.cancel()
+        self.running = False
