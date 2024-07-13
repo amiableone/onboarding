@@ -3,11 +3,11 @@ import os
 
 from dotenv import load_dotenv
 from httpx import AsyncClient
-from pathlib import Path
 from openai import AsyncOpenAI
 from openai.types import FileObject
 from openai.types.beta import Assistant, Thread
 from openai.types.beta.vector_stores import VectorStoreFileBatch
+from pathlib import Path
 
 load_dotenv()
 
@@ -89,3 +89,50 @@ async def create_assistant(
 def to_messages(text, role):
     # images are not supported at this point.
     return [{"role": role, "content": text}]
+
+
+async def get_filename(
+        client: AsyncOpenAI,
+        file_id: str,
+        vstore_id: str,
+) -> FileObject:
+    f = await client.beta.vector_stores.files.retrieve(
+        vector_store_id=vstore_id,
+        file_id=file_id,
+    )
+    return f.filename
+
+
+async def handle_annotations(
+        client: AsyncOpenAI,
+        response: str,
+        annotations: list,
+        vstore_id: str,
+):
+    """
+    Replace file_citation annotations with a reference to a corresponding
+    file name.
+    """
+    lock = asyncio.Lock()
+
+    def gen_file_getter(annotations):
+        for annotation in annotations:
+            placeholder = annotation.text
+            print("==============ANNOTATION TEXT", placeholder)
+            try:
+                file_id = annotation.file_citation.file_id
+                file_ids.append(file_id)
+                print("===================FILE ID", file_id)
+                task = asyncio.create_task(get_filename(client, file_id, vstore_id))
+                task._placeholder = placeholder
+            except AttributeError:
+                continue
+
+    file_getter_generator = gen_file_getter(annotations)
+    for coro in file_getter_generator:
+        task = await coro
+        filename = task.result
+        placeholder = task._placeholder
+        async with lock:
+            response = response.replace(placeholder, f" (from {filename})")
+    return response
