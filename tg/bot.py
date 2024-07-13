@@ -111,7 +111,7 @@ class BotBase:
     def complete_work(self, task):
         self._tasks.discard(task)
         logger.debug(
-            "Task wrapping coro %s is finished and removed from the bot.",
+            "Task wrapping coro %s is discarded.",
             task._coro.__name__,
         )
         if not self._tasks:
