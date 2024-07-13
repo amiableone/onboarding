@@ -79,6 +79,9 @@ async def create_assistant(
            "Just answer the question. "
            "5. When asked about a hackathon, answer using info about the AI Bot "
            "Hackathon Task, including timelines."
+           "6. You can ask questions from the Test for candidates. The file with "
+           "test questions to ask has 'Проверьте, готовы ли вы к результативному "
+           "хакатону и интервью с помощью этого короткого теста' in it."
     )
     assistant = await client.beta.assistants.create(
         instructions = instructions,
