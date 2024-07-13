@@ -82,7 +82,6 @@ class QueryDispatcher:
 
     async def get_response(self, run: Run, last_id: str | NotGiven):
         # if run is completed, retrieve the message it generated.
-        response = "Что-то сломалось. Может, попробуем снова?"
         if run.status == "completed":
             paginator =  self.client.beta.threads.messages.list(
                 thread_id=run.thread_id,
@@ -98,7 +97,7 @@ class QueryDispatcher:
                 except AttributeError as err:
                     # message content type is probably not 'text'.
                     pass
-        return response, last_id
+            return response, last_id
 
     async def handle_user(self, chat_id, query):
         """Handle a single user interaction with the OpenAI API."""
@@ -106,8 +105,11 @@ class QueryDispatcher:
         while True:
             thread_id = await self.thread_message(chat_id, query)
             run = await self.run_thread(thread_id)
-            response, last_id = await self.get_response(run, last_id)
-            self.responses.put_nowait((chat_id, response))
+            result = await self.get_response(run, last_id)
+            if result is not None:
+                response, last_id = result
+                self.responses.put_nowait((chat_id, response))
+            await asyncio.sleep(1)
 
     async def run(self):
         """Run QueryDispatcher."""
