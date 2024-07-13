@@ -44,10 +44,10 @@ class QueryDispatcher:
         # store information for the assistant in the VectorStore object
         # of the OpenAI API.
         batch = await store_files(qd.client)
-        vectore_store_id = batch.vector_store_id
+        vstore_id = batch.vector_store_id
 
         # create an assistant.
-        qd.assistant = await create_assistant(qd.client, vectore_store_id)
+        qd.assistant = await create_assistant(qd.client, vstore_id)
         return qd
 
     async def thread_message(self, chat_id, text, role="user"):
