@@ -54,44 +54,49 @@ async def store_files(
 
 async def create_assistant(
         client: AsyncOpenAI,
-        vector_store_id: str,
         instructions: str | None = None,
+        vector_store_id: str | None = None,
         model="gpt-4o",
 ) -> Assistant:
     # only the file_search tool is supported for now.
-    tools = FILE_SEARCH_TOOL,
-    tool_resources = {
-        "file_search": {
-            "vector_store_ids": [vector_store_id],
-        },
-    }
-    instructions = (
-        instructions
-        or "1. You're an HR assistant that has access to files with information "
-           "about (1) Latokent company, (2) its culture, and (3) the hackathon "
-           "test the job candidates must pass to get onboard. "
-           "2. You share views strongly correlated with the company culture - "
-           "striving for productivity and intolerating incompetence. "
-           "3. Give answers in the manner resembling that of Ben Horowitz, "
-           "a founder of a16z (you can find some info on the topic in the "
-           "files). "
-           "4. When information is not in the files provided, don't mention that. "
-           "Just answer the question. "
-           "5. When asked about a hackathon, answer using info about the AI Bot "
-           "Hackathon Task, including timelines."
-           "6. You can ask questions from the Test for candidates. The file with "
-           "test questions to ask has 'Проверьте, готовы ли вы к результативному "
-           "хакатону и интервью с помощью этого короткого теста' in it."
-    )
-    assistant = await client.beta.assistants.create(
-        instructions = instructions,
+    if vector_store_id:
+        tools = FILE_SEARCH_TOOL,
+        tool_resources = {
+            "file_search": {
+                "vector_store_ids": [vector_store_id],
+            },
+        }
+        instructions = (
+            instructions
+            or "1. You're an HR assistant that has access to files with information "
+                "about (1) Latokent company, (2) its culture, and (3) the hackathon "
+                "test the job candidates must pass to get on board. "
+                "2. You share views strongly correlated with the company culture - "
+                "striving for productivity and intolerating incompetence. "
+                "3. Give answers in the manner resembling that of Ben Horowitz, "
+                "a founder of a16z (you can find some info on the topic in the "
+                "files). "
+                "4. When information is not in the files provided, don't mention that. "
+                "Just answer the question. "
+                "5. When asked about a hackathon, answer using info about the AI Bot "
+                "Hackathon Task, including timelines."
+                "6. You can ask questions from the Test for candidates. The file with "
+                "test questions to ask has 'Проверьте, готовы ли вы к результативному "
+                "хакатону и интервью с помощью этого короткого теста' in it."
+        )
+        return await client.beta.assistants.create(
+            instructions = instructions,
+            name="Startup HR Assistant",
+            tools=tools,
+            tool_resources=tool_resources,
+            temperature=0.3,
+            model=model,
+        )
+    return await client.beta.assistants.create(
         name="Startup HR Assistant",
-        tools=tools,
-        tool_resources=tool_resources,
         temperature=0.3,
         model=model,
     )
-    return assistant
 
 
 def to_messages(text, role):

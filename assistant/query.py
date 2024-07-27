@@ -42,16 +42,19 @@ class QueryDispatcher:
         self.running = False
 
     @classmethod
-    async def setup(cls):
+    async def setup(cls, files=True):
         qd = cls()
 
-        # store information for the assistant in the VectorStore object
-        # of the OpenAI API.
-        batch = await store_files(qd.client)
-        vstore_id = batch.vector_store_id
+        if files:
+            # store information for the assistant in the VectorStore
+            # object of the OpenAI API.
+            batch = await store_files(qd.client)
+            vstore_id = batch.vector_store_id
 
-        # create an assistant.
-        qd.assistant = await create_assistant(qd.client, vstore_id)
+            # create an assistant.
+            qd.assistant = await create_assistant(qd.client, vstore_id)
+        else:
+            qd.assistant = await create_assistant(qd.client)
         return qd
 
     async def thread_message(self, chat_id, text, role="user"):
