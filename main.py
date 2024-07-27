@@ -18,6 +18,11 @@ parser.add_argument(
     action="store_true",
     help="run in debug mode to see more detailed logs",
 )
+parser.add_argument(
+    "--files", "-f",
+    action="store_true",
+    help="tell QueryDispatcher to create a VectorStore object for the assistant",
+)
 
 
 async def _start_cb(bot: Bot, chat_id, *args):
@@ -102,6 +107,7 @@ async def log_state():
 async def main(
         bot: Bot,
         debug: bool,
+        files: bool,
         handle_commands: bool,
 ):
     logging.basicConfig(
@@ -111,7 +117,7 @@ async def main(
     logger.debug("Running in debug mode.")
 
     # instantiate QueryDispatcher.
-    qd = await QueryDispatcher.setup()
+    qd = await QueryDispatcher.setup(files=files)
     try:
         bot_runner = asyncio.create_task(bot.run())
         qd_runner = asyncio.create_task(qd.run())
@@ -163,6 +169,7 @@ async def main(
 if __name__ == "__main__":
     args = parser.parse_args()
     DEBUG = args.debug
+    FILES = args.files
 
     TOKEN = os.environ["TELEGRAM_BOT_TOKEN"]
     bot = Bot(TOKEN)
@@ -176,5 +183,5 @@ if __name__ == "__main__":
         bot.commands["start"].description = "Let me greet you."
         bot.commands["help"].description = "See what I can help you with."
 
-    asyncio.run(main(bot, DEBUG, HANDLE_COMMANDS))
+    asyncio.run(main(bot, DEBUG, FILES, HANDLE_COMMANDS))
 
